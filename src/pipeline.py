@@ -12,52 +12,10 @@ from .notifier import build_whatsapp_message, build_sms_message, WhatsAppSenderM
 def now_ms():
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
-
-def ensure_columns(df):
-    required = [
-        "姓名",
-        "入住时间",
-        "退房时间",
-        "电话号码",
-        "有无车库",
-        "lockId",
-        "keyId",
-        "keyName",
-        "startDate",
-        "endDate",
-        "keyboardPwdVersion",
-        "keyboardPwd",
-        "passcode",
-        "ekey",
-        "whatsapp_send_at",
-        "sms_send_at",
-    ]
-    missing = [c for c in required if c not in df.columns]
-    if missing:
-        raise ValueError(f"Missing columns: {missing}")
-
-
 def attach_messages(df):
     df = df.copy()
     df["whatsapp_message"] = df.apply(build_whatsapp_message, axis=1)
     df["sms_message"] = df.apply(build_sms_message, axis=1)
-    return df
-
-
-def attach_ttlock_real(df, ttlock_client: TTLockClient):
-    df = df.copy()
-    ekey_payloads = []
-    passcode_payloads = []
-
-    for _, row in df.iterrows():
-        ekey_payload = ttlock_client.get_ekey(int(row["keyId"]))
-        passcode_payload = ttlock_client.get_passcode(int(row["keyId"]))
-
-        ekey_payloads.append(ekey_payload)
-        passcode_payloads.append(passcode_payload)
-
-    df["ekey_payload"] = ekey_payloads
-    df["passcode_payload"] = passcode_payloads
     return df
 
 
@@ -97,7 +55,7 @@ def create_ttlock_from_record(ttlock_client: TTLockClient, row):
     }
 
 
-def sync_ttlock(df, use_real_ttlock=False):
+def sync_ttlock(df, use_real_ttlock=False): # 创建密码的结果返回写入到ttlock app 中，并且把结果写回到df中，方便后续查看和调试
     if not use_real_ttlock:
         return df
 
@@ -130,16 +88,6 @@ def sync_ttlock(df, use_real_ttlock=False):
     df["passcode_result"] = passcode_results
     return df
 
-
-# def due_rows(df, current_dt=None):
-#     if current_dt is None:
-#         current_dt = pd.Timestamp.utcnow()
-#     if not isinstance(current_dt, pd.Timestamp):
-#         current_dt = pd.Timestamp(current_dt)
-
-#     whatsapp_due = df[df["whatsapp_send_at"] <= current_dt].copy()
-#     sms_due = df[df["sms_send_at"] <= current_dt].copy()
-#     return whatsapp_due, sms_due
 
 def due_rows(df, current_dt=None):
     if current_dt is None:
@@ -198,7 +146,7 @@ def send_notifications(df, use_real_twilio=False, current_dt=None):
 def run_pipeline(
     data_dir="data",
     use_demo_csv=True,
-    use_real_ttlock=False,
+    use_real_ttlock=True,
     use_real_twilio=False,
     current_dt=None,
 ):
@@ -244,12 +192,10 @@ if __name__ == "__main__":
     # )
     # print(result)
 
-    # Real TTLock, mock Twilio
+    # Real TTLock, mock Twilio (default now)
     result = run_pipeline(
         data_dir="data",
         use_demo_csv=False,
-        use_real_ttlock=True,
-        use_real_twilio=False,
     )
 
     # # Real TTLock, real Twilio

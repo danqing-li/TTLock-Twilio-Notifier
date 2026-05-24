@@ -142,6 +142,14 @@ class TTLockClient:
         }
         return self._request("POST", "/v3/keyboardPwd/add", data=data)
 
+#     TODO 3. 缺少必需参数，反而被当“不存在的路径”处理
+# TTLock 的 keyboardPwd/add 要求：
+
+# clientId、accessToken、lockId、keyboardPwd、startDate、endDate、date 都是必须或强烈建议传的。
+
+# 如果你漏了这些参数，某些中间层/代理可能会把请求算作“路由错误”，返回 404（而不是 errcode）。
+
+
     def create_ekey(
         self,
         lock_id: int,
