@@ -1,0 +1,9 @@
+[project]
+name = "booking-ttlock-automation"
+version = "0.1.0"
+description = "Demo pipeline for booking CSV, TTLock mock, and WhatsApp/SMS scheduling"
+requires-python = ">=3.10"
+dependencies = ["pandas>=2.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
