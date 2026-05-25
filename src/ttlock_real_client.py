@@ -1,6 +1,7 @@
 import os
 import hashlib
 import requests
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -103,11 +104,17 @@ class TTLockClient:
         params.update({
             "clientId": self.config.client_id,
             "accessToken": self.access_token,
+            "date": int(time.time() * 1000),
         })
         url = f"{TTLOCK_BASE_URL}{path}"
         resp = requests.request(method, url, params=params, data=data, timeout=30)
         resp.raise_for_status()
-        return resp.json()
+
+        res_json = resp.json()
+        if isinstance(res_json, dict) and res_json.get("errcode", 0) != 0:
+            raise RuntimeError(f"TTLock API Error: {res_json.get('errcode')} - {res_json.get('errmsg')}")
+
+        return res_json
 
     def get_ekey(self, key_id: int):
         return self._request("GET", "/v3/key/get", params={"keyId": key_id})
